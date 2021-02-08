@@ -125,6 +125,7 @@ wbe_create_db_from_script <- function(drv = RSQLite::SQLite(),
 
 
   for (i in 1:length(queries3)) {
+    print(i)
     dbExecute(conn, queries3[i])
   }
 
@@ -335,8 +336,7 @@ wbe_append_from_df <- function(df,
   #' @param value_name_cases
   #' @param ... passed to dbWriteTable
 
-  if(nrow(df) == 0)
-  {
+  if(nrow(df) == 0) {
     message(glue("wrote {nrow(df)} rows to {tbl_nm}"))
     return(TRUE)
   }
@@ -533,7 +533,7 @@ wbe_find_df_col <- function(df, col_nm = NULL){
   }
 
   df_colNm <- colnames(df)  %>%
-    grep(pattern = glue("{col_nm}$"), x = ., ignore.case = T, value = T)
+    grep(pattern = glue("^(?!.*\\.{col_nm})({col_nm})$"), x = ., ignore.case = T, value = T, perl = T)
   if (length(df_colNm) != 1)
     return(NULL)
 
@@ -772,6 +772,24 @@ wbe_narrow_df <-function(df,
   # removes columns from the dataframe the do not match well with the given table
   for (nm in wbe_tbl_col_nms(tbl_nm = tbl_nm, conn = conn)){
     df_nm <- wbe_find_df_col(df, nm)
+
+    if (is_null(df_nm)){
+      print(nm)
+
+      df_nm <- wbe_find_df_col(df, glue("{tbl_nm}.{nm}"))
+      print(df_nm)
+    }
+
+
+    if (is_null(df_nm)){
+      print(nm)
+
+      df_nm <- wbe_find_df_col(df, glue("{tbl_nm}._{nm}"))
+      print(df_nm)
+    }
+
+
+
     if (! is_null(df_nm))
       df2[[nm]] <- df[[df_nm]]
   }
@@ -794,16 +812,25 @@ wbe_ensure_measurement_id <- function(measure_df) {
 
   #########################
   # Make measurementID if needed
-  measurementID_col_nm <- wbe_find_df_col(measure_df, "measurementID")
+  measurementID_col_nm <- wbe_find_df_col(measure_df, "ID")
   if(is_null(measurementID_col_nm)){
     measure_df <-
       measure_df %>%
-      unite(measurementID, c("sampleID", "measureCat", "measureUnit", "measureType", "sampleIndex"), remove  = FALSE) %>%
-      mutate(measurementID = digest_vect(measurementID))
+      unite(ID, c("sample.ID", "analysisDate", "category", "unit", "aggregation", "index"), remove  = FALSE) %>%
+      mutate(ID = digest_vect(ID))
 
-    measurementID_col_nm <- wbe_find_df_col(measure_df, "measurementID")
+    measurementID_col_nm <- wbe_find_df_col(measure_df, "ID")
   }
-  measure_df[["measurementID"]] <- measure_df[[measurementID_col_nm]]
+  measure_df[["ID"]] <- measure_df[[measurementID_col_nm]]
+
+  measure_df <-
+    measure_df %>%
+    mutate(., tmp = 1:nrow(.)) %>%
+    unite(uID, c("ID", "tmp"), remove  = FALSE) %>%
+    mutate(uID = digest_vect(uID)) %>%
+    select(-tmp)
+
+
   return(measure_df)
 
 }
@@ -916,23 +943,23 @@ wbe_sample_measurments_wide_2_long <- function(df,
 
   #########################
   #Make sure we have a siteID
-  siteID_col_nm <- wbe_find_df_col(df, "siteID")
+  siteID_col_nm <- wbe_find_df_col(df, "site.ID")
   if(is_null(siteID_col_nm)){
 
     if(is_null(parent_site_id)){
       if(is_null(parent_reporter_id)){
-        df[["siteID"]] <- "Unknown_unknown"
+        df[["site.ID"]] <- "Unknown_unknown"
       }else{
-        df[["siteID"]] <- glue("{parent_reporter_id}_uknown_site")
+        df[["site.ID"]] <- glue("{parent_reporter_id}_uknown_site")
       }
 
 
-      df[["siteID"]] <- digest_vect(df[["siteID"]])
+      df[["site.ID"]] <- digest_vect(df[["site.ID"]])
     }else{
-      df[["siteID"]] <- parent_site_id
+      df[["site.ID"]] <- parent_site_id
     }
 
-    siteID_col_nm <- wbe_find_df_col(df, "siteID")
+    siteID_col_nm <- wbe_find_df_col(df, "site.ID")
     df <- df %>% relocate(siteID_col_nm)
   }
 
@@ -942,7 +969,7 @@ wbe_sample_measurments_wide_2_long <- function(df,
 
   #########################
   # Make sampleID if needed
-  sampleID_col_nm <- wbe_find_df_col(df, "sampleID")
+  sampleID_col_nm <- wbe_find_df_col(df, "Sample.ID")
   if(is_null(sampleID_col_nm)){
     df <-
       df %>%
@@ -965,11 +992,11 @@ wbe_sample_measurments_wide_2_long <- function(df,
 
   #########################
   # Make labID if needed
-  labID_col_nm <- wbe_find_df_col(df, "labID")
+  labID_col_nm <- wbe_find_df_col(df, "lab.ID")
 
   if(is_null(labID_col_nm )){
-    df[["Measurement.labID"]] <- wbe_labIDDefault(reporter_id = parent_reporter_id, conn = conn)
-    labID_col_nm <- "Measurement.labID"
+    df[["Measurement.lab.ID"]] <- wbe_labIDDefault(reporter_id = parent_reporter_id, conn = conn)
+    labID_col_nm <- "Measurement.lab.ID"
     df <- df %>% relocate(labID_col_nm)
 
   }
@@ -979,12 +1006,12 @@ wbe_sample_measurments_wide_2_long <- function(df,
 
   #########################
   # Make assayID if needed
-  assayID_col_nm <- wbe_find_df_col(df, "assayID")
+  assayID_col_nm <- wbe_find_df_col(df, "assay.ID")
   if(is_null(assayID_col_nm)){
-    df[["Measurement.assayID"]] <- wbe_default_Id(df[["labID"]],
+    df[["Measurement.assay.ID"]] <- wbe_default_Id(df[[labID_col_nm]],
                                                   tbl_nm ="Lab",
-                                                  def_col_nm = "Measurement.assayIDDefault")
-    assayID_col_nm <- "Measurement.assayID"
+                                                  def_col_nm = "assay.IDDefault")
+    assayID_col_nm <- "Measurement.assay.ID"
     df <- df %>% relocate(assayID_col_nm)
   }
 
@@ -992,10 +1019,10 @@ wbe_sample_measurments_wide_2_long <- function(df,
 
   #########################
   # Make reportedDate if needed
-  reportedDate_col_nm <- wbe_find_df_col(df, "reportedDate")
+  reportedDate_col_nm <- wbe_find_df_col(df, "reportDate")
   if(is_null(reportedDate_col_nm)){
-    df[["Measurement.reportedDate"]] <- Sys.Date()
-    reportedDate_col_nm <- "Measurement.reportedDate"
+    df[["Measurement.reportDate"]] <- Sys.Date()
+    reportedDate_col_nm <- "Measurement.reportDate"
     df <- df %>% relocate(reportedDate_col_nm)
   }
 
@@ -1020,7 +1047,7 @@ wbe_sample_measurments_wide_2_long <- function(df,
     grep(pattern = "^Measurement\\..*analysisDate*.", x = ., ignore.case = T)
 
   df_measurement_common <- df_measurement_all[1:analysisDate_col_indexs[1]-1]
-  wbe_find_df_col(df = df_measurement_all, col_nm = "labID")
+  wbe_find_df_col(df = df_measurement_all, col_nm = "lab.ID")
 
   #######################
   #
@@ -1043,16 +1070,16 @@ wbe_sample_measurments_wide_2_long <- function(df,
         mutate_at(vars(matches(pattern4_longing, ignore.case = T, perl = T)), as.double) %>%
         pivot_longer(cols = matches(pattern4_longing, ignore.case = T, perl = T),
                      names_prefix = "Measurement.",
-                     values_to = "measureValue") %>%
-        separate(name , c("measureCat",
-                          "measureUnit",
-                          "measureType",
-                          "sampleIndex")) %>%
-        mutate(sampleIndex = if_else(is.na(sampleIndex) & !is.na(as.integer(measureType)), measureType, sampleIndex)) %>%
-        mutate(measureType = if_else(!is.na(as.integer(measureType)), "singlton", measureType)) %>%
+                     values_to = "value") %>%
+        separate(name , c("category",
+                          "unit",
+                          "aggregation",
+                          "index")) %>%
+        mutate(index = if_else(is.na(index) & !is.na(as.integer(aggregation)), aggregation, index)) %>%
+        mutate(aggregation = if_else(!is.na(as.integer(aggregation)), "single", aggregation)) %>%
         wbe_narrow_df(df = ., tbl_nm = "Measurement", conn = conn) %>%
         wbe_ensure_measurement_id() %>%
-        filter( ! is.na(measureValue))
+        filter( ! is.na(value))
 
     })
 
@@ -1075,8 +1102,10 @@ wbe_sample_measurments_wide_2_long <- function(df,
 
 
 
+
+
 wbe_read_mappers <- function(base_dir = file.path("src", "mappers"),
-                             mapper_pattern = "mapper.r"
+                             mapper_pattern = "^.*_mapper.r$"
                              ){
   #'
   #' Reads in all the mapping codes makes a list of mappers and returns the object
@@ -1118,4 +1147,6 @@ wbe_read_and_map <- function(nm,
   dfs <- read_func(full_fn)
   mapper_func(dfs)
 }
+
+
 

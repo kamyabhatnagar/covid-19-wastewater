@@ -5,8 +5,6 @@ There are eight tables that are described below. example data is stored in [data
 -   [Measurement](#Measurement) ([Measurements.csv](data/Measurements.csv))
 -   [Sample](#Sample) ([Sample.csv](data/Sample.csv))
 -   [Site](#Site) ([Site.csv](data/Site.csv))
--   [Reporter](#Reporter) ([Reporter.csv](data/Reporter.csv))
--   [Lab](#Lab) ([Lab.csv](data/Lab.csv))
 -   [AssayMethod](#AssayMethod) (AssayMethod.csv - **TBA**)
 -   [Polygon](#Polygon) (Polygon.csv - **TBA**)
 -   [CovidPublicHealthData](#CovidPublicHealthData) (CovidPublicHealthData.csv - **TBA**)
@@ -266,7 +264,7 @@ Laboratory that performs SARS-CoV-2 wastewater testing at one or more sites.
 
 The assay method that was used to perform testing. This database will be developed in consultation with testing labs to identify key assay features that can affect SARS-CoV-2 results.
 
--   **assay.ID**: (Primary key) Unique identifier for the assay method.
+-   **ID**: (Primary key) Unique identifier for the assay method.
 
 -   **version**: Version of the assay. [Semantic versioning](https://semver.org) is recommended.
 

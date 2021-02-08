@@ -4,6 +4,9 @@ gc()
 
 source("src/wbe_db_func.r")
 #wbe_delete_whole_db()
+#wbe_create_db_from_script()
+
+
 
 
 mappers <- wbe_read_mappers()

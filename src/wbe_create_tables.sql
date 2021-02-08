@@ -1,19 +1,19 @@
 
 
 CREATE TABLE  IF NOT EXISTS [Polygon] (
-  [polygonID] char NOT NULL PRIMARY KEY,
-  [polygonName] char,
-  [polygonPop] integer,
-  [polygonType] char,
-  [polygonWKT] char,
-  [polygonFile] blob null default (x''),
-  [polygonLink] char
+  [ID] char NOT NULL PRIMARY KEY,
+  [name] char,
+  [pop] integer,
+  [type] char,
+  [wkt] char,
+  [file] blob null default (x''),
+  [link] char
 );
 
 CREATE TABLE IF NOT EXISTS [Reporter] (
-  [reporterID] char NOT NULL PRIMARY KEY,
-  [siteIDDefault] char,
-  [labIDDefault]  char,
+  [ID] char NOT NULL PRIMARY KEY,
+  [site.IDDefault] char,
+  [lab.IDDefault]  char,
   [contactName] char,
   [contactEmail] char,
   [contactPhone] int,
@@ -29,84 +29,97 @@ CREATE TABLE IF NOT EXISTS [Reporter] (
 );
 
 CREATE TABLE  IF NOT EXISTS [Site] (
-  [siteID] char NOT NULL PRIMARY KEY,
-  [siteName] char,
-  [siteDescription] char,
-  [reporterID] char,
-  [siteType] char,
-  [siteTypeOther] char,
-  [sampleTypeDefault] char,
-  [sampleTypeOtherDefault] char,
-  [methodCollectionDefault] char,
-  [methodCollectOtherDefault] char,
-  [sampleFractionDefault] char,
-  [samplestorageTempCDefault] float,
+  [ID] char NOT NULL PRIMARY KEY,
+  [name] char,
+  [description] char,
+  [reporter.ID] char,
+  [type] char,
+  [typeOther] char,
+  [accessType] char,
+  [accessTypeOther] char,
+  [sample.typeDefault] char,
+  [sample.typeOtherDefault] char,
+  [sample.collectionDefault] char,
+  [sample.collectOtherDefault] char,
+  [measurement.fractionAnalysedDefault] char,
+  [sample.tempCdefault] char,
   [geoLat] float,
   [geoLong] float,
   [notes] char,
-  [sewerNetworkPolygonID] char,
+  [Polygon.ID] char,
   [sewerNetworkFileLink] char,
   [sewerNetworkFileBlob]  blob null default (x''),
-  FOREIGN KEY ([reporterID]) REFERENCES Reporter(reporterID) DEFERRABLE INITIALLY DEFERRED
+  FOREIGN KEY ([reporter.ID]) REFERENCES Reporter(ID) DEFERRABLE INITIALLY DEFERRED
 );
 
 CREATE TABLE  IF NOT EXISTS [Sample] (
-  [sampleID] char NOT NULL PRIMARY KEY,
-  [siteID] char,
-  [DateTime] dateTime,
-  [DateTimeStart] dateTime,
-  [DateTimeEnd] dateTime,
-  [sampleType] char,
-  [sampleTypeOther] char,
-  [methodCollection] char,
-  [methodCollectionOther] char,
-  [sampleSizeL] float,
-  [sampleStorageTempC] float,
+  [ID] char NOT NULL PRIMARY KEY,
+  [site.ID] char,
+  [dateTime] dateTime,
+  [dateTimeStart] dateTime,
+  [dateTimeEnd] dateTime,
+  [type] char,
+  [typeOther] char,
+  [collection] char,
+  [collectionOther] char,
+  [collectionTriggerTime] float,
+  [preTreatment] INTEGER,
+  [preTreatmentDescription] char,
+  [childID] char,
+  [parentID ] char,
+  [sizeL] float,
+  [samplingTempC] float,
+  [storageTempC] float,
+  [mailedOnIce] INTEGER,
+  [qualityFlag] INTEGER,
   [notes] char,
-  FOREIGN KEY ([siteID]) REFERENCES Reporter(siteID) DEFERRABLE INITIALLY DEFERRED
+  FOREIGN KEY ([site.ID]) REFERENCES Site(ID) DEFERRABLE INITIALLY DEFERRED
 );
 
 CREATE TABLE  IF NOT EXISTS [AssayMethod] (
-  [assayID] char NOT NULL PRIMARY KEY,
+  [ID] char NOT NULL PRIMARY KEY,
   [version] char,
   [sampleSizeL] float,
   [loq] float,
   [lod] float,
-  [methodUnits] char,
-  [methodUnitsOther] char,
-  [assayDate] char,
+  [units] char,
+  [unitsOther] char,
+  [concentrationMethod]char,
+  [extractionMethod]char,
+  [pcrMethod]char,
+  [qualityAssuranceQC]char,
   [Inhibition] char,
   [surrogateRecovery] char,
-  [assayDesc] char
+  [assayDesc] char,
+  [assayDate] dateTime
 );
 
 
 
 CREATE TABLE  IF NOT EXISTS [Lab] (
-  [labId] char NOT NULL PRIMARY KEY,
-  [assayIDDefault] char,
+  [ID] char NOT NULL PRIMARY KEY,
+  [assay.IDDefault] char,
   [laboratoryName] char,
   [contactName] char,
   [contactEmail] char,
   [contactPhone] int,
   [labUpdateDate] date,
-  FOREIGN KEY ([assayIDDefault]) REFERENCES AssayMethod(assayID) DEFERRABLE INITIALLY DEFERRED
+  FOREIGN KEY ([assay.IDDefault]) REFERENCES AssayMethod(ID) DEFERRABLE INITIALLY DEFERRED
 );
 
+
+
 CREATE TABLE  IF NOT EXISTS [CovidPublicHealthData] (
-  [publicHealthID] char NOT NULL PRIMARY KEY,
-  [reporterID]char,
-  [polygonID]char,
+  [ID] char NOT NULL PRIMARY KEY,
+  [reporter.ID]char,
+  [polygon.ID]char,
   [date] date,
   [dateType] char,
-  [numberOfNewCases] float,
-  [numberOfActiveCases] float,
-  [numberOfTests] float,
-  [numberOfPositiveTests] float,
-  [percentPositivityRate] float,
-  FOREIGN KEY ([reporterID]) REFERENCES Reporter(reporterID) DEFERRABLE INITIALLY DEFERRED,
-  FOREIGN KEY ([polygonID]) REFERENCES Polygon(polygonID) DEFERRABLE INITIALLY DEFERRED
-
+  [valueType] char,
+  [Value] float,
+  [notes] char,
+  FOREIGN KEY ([reporter.ID]) REFERENCES Reporter(ID) DEFERRABLE INITIALLY DEFERRED,
+  FOREIGN KEY ([polygon.ID]) REFERENCES Polygon(ID) DEFERRABLE INITIALLY DEFERRED
 );
 
 
@@ -118,24 +131,25 @@ CREATE TABLE  IF NOT EXISTS [Lookups](
 );
 
 CREATE TABLE  IF NOT EXISTS [Measurement] (
-  [measurementID] char NOT NULL PRIMARY KEY,
-  [sampleID] char,
-  [labID] char,
-  [assayID] char,
+  [uID] char NOT NULL PRIMARY KEY,
+  [ID] char,
+  [sample.ID] char,
+  [lab.ID] char,
+  [assay.ID] char,
   [analysisDate] date,
-  [reportedDate] date,
-  [sampleFraction] char,
-  [measureCat] char,
-  [measureCatOther] char,
-  [measureUnit] char,
-  [measureUnitOther] char,
-  [measureType] char,
-  [measureTypeOther] char,
-  [sampleIndex] char,
-  [measureValue] float,
-  [measureValueDetected] INTEGER,
+  [reportDate] date,
+  [fractionAnalysed] char,
+  [category] char,
+  [categoryOther] char,
+  [unit] char,
+  [unitOther] char,
+  [aggregation] char,
+  [aggregationeOther] char,
+  [index] char,
+  [value] float,
+  [qualityFlag] INTEGER,
   [notes] char,
-  FOREIGN KEY ([sampleID]) REFERENCES Sample(sampleID) DEFERRABLE INITIALLY DEFERRED,
-  FOREIGN KEY ([labID]) REFERENCES Lab(labID) DEFERRABLE INITIALLY DEFERRED,
-  FOREIGN KEY ([assayID]) REFERENCES AssayMethod(assayID) DEFERRABLE INITIALLY DEFERRED
+  FOREIGN KEY ([sample.ID]) REFERENCES Sample(ID) DEFERRABLE INITIALLY DEFERRED,
+  FOREIGN KEY ([lab.ID]) REFERENCES Lab(ID) DEFERRABLE INITIALLY DEFERRED,
+  FOREIGN KEY ([assay.ID]) REFERENCES AssayMethod(ID) DEFERRABLE INITIALLY DEFERRED
 )

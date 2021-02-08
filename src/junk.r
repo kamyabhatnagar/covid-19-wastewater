@@ -2,9 +2,9 @@
 
 
 
+wbe_create_db_from_script()
 
-
-
+wbe_delete_whole_db()
 
 mappers <- wbe_read_mappers()
 

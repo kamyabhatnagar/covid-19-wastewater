@@ -1,0 +1,101 @@
+---
+title: "Preparing wastewater data for visualization"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This vignette provides instructions on how to prepare Ottawa Data Model (ODM) data for visualization purposes. In this vignette, wastewater and covid-19 data for the Ottawa area will be used.
+
+## Preparing wastewater data
+
+The first step is to source the existing wastewater data along with the helper functions that are stored in the repository.
+
+```{r}
+# source ODM data 
+odm_data <- read.csv("data/wastewater_virus.csv")
+# source helper functions
+source("R/helper-functions.R")
+```
+
+As you can see, the ODM dataset contains considerable metadata (see [here](https://github.com/Big-Life-Lab/covid-19-wastewater/blob/main/metadata.md)) providing information on wastewater collection and reporting. For the purposes of visualization, much of this metadata will be omitted. 
+
+To generate a dataset for visualization, we will keep the sample date and viral signal columns. In this vignette we will rename the columns but you may choose to retain the column names in your own analysis.
+
+```{r, warning=FALSE, message=FALSE}
+library(dplyr)
+odm_clean <- odm_data %>%
+  rename(date = "sampleDate",
+         N1 = "covidN1_PMMV_meanNormal",
+         N2 = "covidN2_PMMV_meanNormal") %>%
+  # NOTE: it is important to coerce the date column into being of date class to prevent errors later on 
+  mutate(date = as.Date(date)) %>% 
+  select(date, N1, N2)
+```
+
+### Generating average and rolling average signal data
+
+Given the variability of daily wastewater data, generating average and rolling average data allows you to examine temporal trends. 
+
+In this step an average signal column will be created that takes the mean value of each daily viral signal. In the Ottawa data there are two viral signals measured daily, but an average value can be done for more measured viral signals.
+
+```{r, warning=FALSE, message=FALSE}
+odm_clean$avg_signal <- (odm_clean$N1 + odm_clean$N2)/2
+```
+
+Once you have generated an average signal column, you can now generate rolling averages for daily viral data. Rolling averages are mean values over a subset of the dataset. In this repository we have generated a `rolling_avg()` function that is based on the [zoo](https://cran.r-project.org/web/packages/zoo/index.html) package. 
+
+There are four parameters in the `rolling_avg()` function:
+
+* `data` denotes the dataset to be used.
+* `param` denotes the column to calculate the rolling average from.
+* `length` denotes the length of the rolling average. For example, a 7-day rolling average would have a length = 7.
+* `type` denotes the type of rolling average (midpoint, right, left). Midpoint takes values from prior days along with values from later days; right only takes values from prior days; left only takes values from later days. The function defaults to midpoint so if you would like to use a midpoint rolling average this parameter does not need to be called.
+
+For this vignette, we will use a 7-day midpoint rolling average.
+```{r, warning=FALSE, message=FALSE}
+odm_clean$avg_signal_7_day <- rolling_avg(
+  data = odm_clean,
+  param = "avg_signal",
+  length = 7
+)
+```
+
+## Merging wastewater data with covid data
+
+To make meaningful examinations of viral covid-19 in wastewater, it is best to compare it with data relating to covid-19 case counts and hospitalizations. In this step, we will merge the modified ODM dataset with covid-19 case data from Ottawa Public Health.
+
+Covid-19 data for the Ottawa region is publicly accessible on [Open Ottawa](https://open.ottawa.ca/datasets/covid-19-cases-and-deaths-in-ottawa). This page is updated daily with information on the number of covid-19 cases and hospitalizations. Open Ottawa also provides an API where users can use a stable JSON link to scrape data from their website. Using the `jsonlite` package, this API can be used to load the dataset into your R environment.
+
+```{r, warning=FALSE, message=FALSE, eval=FALSE}
+jsonlite::fromJSON("https://opendata.arcgis.com/datasets/6bfe7832017546e5b30c5cc6a201091b_0/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json")
+```
+
+For this vignette, we will use the [dataset](https://github.com/Big-Life-Lab/Ottawa-COVID-Projection/blob/master/Data/Observed%20data/OPH_Observed_COVID_Data.csv) used for [613covid.ca](https://613covid.ca/). This dataset uses Open Ottawa data but has gone through extensive data cleaning and preparation. Scripts on how the Open Ottawa data is prepared can be found [here](https://github.com/Big-Life-Lab/Ottawa-COVID-Projection/blob/master/R/open_ottawa_scripts.R).
+
+```{r, warning=FALSE, message=FALSE}
+ott_covid_data <- read.csv("https://raw.githubusercontent.com/Big-Life-Lab/Ottawa-COVID-Projection/master/Data/Observed%20data/OPH_Observed_COVID_Data.csv") %>%
+  mutate(date = as.Date(date)) %>%
+  select(-X)
+```
+
+Using the `full_join()` function from the `dplyr` package, we can then merge the ODM wastewater data with the Ottawa covid-19 data.
+
+```{r, warning=FALSE, message=FALSE}
+odm_merged <- full_join(ott_covid_data, odm_clean, by = "date")
+```
+
+**Note:** in the earlier stages of the covid-19 pandemic, wastewater data in Ottawa was not routinely collected as opposed to covid-19 data. To prevent loss of data, the order of the `full_join()` call will depend on whether the covid-19 dataset contains more data than the wastewater data.
+
+## Saving data
+
+Using `save()` we will save the merged dataset to be used in the next vignette on how to visualize wastewater data. We will save the dataset in both CSV and RData formats.
+
+```{r, warning=FALSE, message=FALSE}
+save(odm_merged, file = "data/ODM_Data.RData")
+write.csv(odm_merged, file = "data/ODM_Data.csv")
+```

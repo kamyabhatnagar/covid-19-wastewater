@@ -39,6 +39,7 @@ ww_visualization <-
     attr(trace_presets$signal_data, "class") <-
       "signal_data"
     
+    # initiate plotly object
     library(plotly)
     p <- plot_ly()
     
@@ -75,6 +76,7 @@ ww_visualization <-
     updated_y2 <- NULL
     menu_y2 <- ""
     
+    # Create traces 
     for (i in 1:length(yaxis)) {
       var_to_map <- yaxis[[i]]
       curr_temp <- trace_presets[[var_to_map$type]]
@@ -143,6 +145,7 @@ ww_visualization <-
     updated <- sprintf(base_params, menu)
     updated <- eval(parse(text = updated))
     
+    # Create traces if second y-axis is specified
     if(!is.null(yaxis2)){
       for (i in 1:length(yaxis2)) {
         var_to_map <- yaxis2[[i]]
@@ -228,6 +231,7 @@ ww_visualization <-
     updated_y2 <- sprintf(base_params_y2, menu_y2)
     updated_y2 <- eval(parse(text = updated_y2))
     
+    # Specify plot layout
     if(is.null(yaxis2)){
       if(!isTRUE(yaxis_button)){
         p <-

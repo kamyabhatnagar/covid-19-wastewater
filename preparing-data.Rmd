@@ -93,7 +93,7 @@ odm_merged <- full_join(ott_covid_data, odm_clean, by = "date")
 
 ## Saving data
 
-Using `save()` we will save the merged dataset to be used in the next vignette on how to visualize wastewater data. We will save the dataset in both CSV and RData formats.
+Using `save()` we will save the merged dataset to be used in the [next vignette](visualizing-data.Rmd) on how to visualize wastewater data. We will save the dataset in both CSV and RData formats.
 
 ```{r, warning=FALSE, message=FALSE}
 save(odm_merged, file = "data/ODM_Data.RData")

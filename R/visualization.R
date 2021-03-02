@@ -1,5 +1,6 @@
 ww_visualization <-
-  function(xaxis,
+  function(data,
+           xaxis,
            yaxis,
            yaxis2 = NULL,
            yaxis_button = FALSE,
@@ -8,8 +9,8 @@ ww_visualization <-
            y2_button_name = "",
            titles,
            width = 800,
-           height = 500,
-           data) {
+           height = 500
+           ) {
     # ---------- PRESETS ----------
     tickvals <- floor_date(as_date(data$date), "month")
     trace_presets <- list(

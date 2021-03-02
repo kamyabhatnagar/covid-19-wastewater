@@ -1,0 +1,51 @@
+---
+title: "Visualizing wastewater data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+To examine trends in the presence of viral covid-19 in wastewater, it is important to visualize the data collected. This vignette provides instructions on how to visualize the Ottawa Data Model (ODM) dataset. The [previous vignette](preparing-data.Rmd) provided instructions on how to prepare the dataset for visualization purposes.
+
+## Visualizing wastewater data
+
+In this repository, we have developed a visualization function (`ww_visualization()`) to visualize wastewater data. This function is used to visualize viral covid-19 in wastewater for the Ottawa area on [613covid.ca](https://613covid.ca/wastewater/). This function uses the [`plotly`](https://plotly.com/r/) package, which generates interactive plots.
+
+This function is able to generate various plots based on inputted parameters. With this function, you are able to visualize various trends within the ODM dataset. 
+
+The following are the parameters of the `ww_visualization()` function. Please note that not all parameters are mandatory to generate a plot. This vignette will present examples of plots generated from the function.
+
+```{r, eval=FALSE}
+ww_visualization(
+  data,
+  xaxis,
+  yaxis,
+  yaxis2 = NULL,
+  yaxis_button = FALSE,
+  yaxis2_button = FALSE,
+  y_button_name = "",
+  y2_button_name = "",
+  titles,
+  width = 800,
+  height = 500
+)
+```
+
+* `data` denotes the dataset that will be used for the visualization.
+* `xaxis` denotes data that will represent the x-axis of the plot. This usually the date column in a dataset.
+* `yaxis` denotes data that will represent the y-axis of the plot. 
+* `yaxis2` is an optional parameter where you may create a secondary y-axis to store data. 
+
+As you will see in the examples, data to `yaxis` & `yaxis2` are passed as lists. These lists contain metadata of the column of interest, and allow users to pass multiple columns into each axes.
+
+* `yaxis_button` is an optional parameter to add a dropdown menu if multiple columns are passed to the y-axis.
+* `yaxis2_button` is an optional parameter to add a dropdown menu if multiple columns are passed to the secondary y-axis.
+* `y_button_name` is an optional parameter to add a title to the y-axis dropdown menu (if button is specified).
+* `y2_button_name` is an optional parameter to add a title to the secondary y-axis dropdown menu (if button is specified).
+* `titles` denotes a list of titles for the plot. This includes the title of the plot, labels for the x-axis, y-axis, and secondary y-axis (if specified). 
+* `width` denotes the width of the plot. This is defaulted to 800 pixels.
+* `height` denotes the height of the plot. This is defaulted to 500 pixels.
